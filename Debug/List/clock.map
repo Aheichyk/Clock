@@ -1,0 +1,46 @@
+RAM Allocation [bytes]
+Variable                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+set                                                                               0x0160       1
+mode                                                                              0x0161       1
+ring                                                                              0x0162       1
+
+EEPROM Allocation [bytes]
+Variable                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+
+Register Allocation
+Variable                                                                          Register  Size
+------------------------------------------------------------------------------------------------
+hour                                                                              R5           1
+min                                                                               R4           1
+sec                                                                               R7           1
+week                                                                              R6           1
+day                                                                               R9           1
+mon                                                                               R8           1
+year                                                                              R11          1
+bt_set                                                                            R10          1
+get_time                                                                          R13          1
+set_mode                                                                          R12          1
+
+FLASH Allocation [words]
+Function                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+set_button                                                                        0x0006D     44
+mode_button                                                                       0x00099     21
+ring_button                                                                       0x000AE      1
+timer0_ovf_isr                                                                    0x000AF     83
+main                                                                              0x00102    107
+rtc_init                                                                          0x0016D     22
+rtc_get_time                                                                      0x00183     17
+rtc_set_time                                                                      0x00194      8
+rtc_get_date                                                                      0x0019C     17
+rtc_set_date                                                                      0x001AD     11
+putchar                                                                           0x001B8      7
+put_usart_G101                                                                    0x001BF     12
+_print_G101                                                                       0x001CB    278
+printf                                                                            0x002E1     30
+bcd2bin                                                                           0x002FF     13
+bin2bcd                                                                           0x0030C     10
+strlen                                                                            0x00316     11
+strlenf                                                                           0x00321     12
