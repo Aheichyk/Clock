@@ -11,14 +11,16 @@
 
 // Declare your global variables here
 unsigned char hour,min,sec,week,day,mon,year;
-unsigned char bt_set=0;
-unsigned char get_time=0;
+unsigned int bt_set=0;
+unsigned int get_time=0;
 unsigned char set_mode=0;
 unsigned char set;
 unsigned char mode;
 unsigned char ring;
+unsigned char ring_disp=0;
 
 void set_button() {
+    // Long & One touch
     printf("Set:mode:%d\r",set_mode);
     if (set_mode==1) {
         hour++;
@@ -36,6 +38,7 @@ void set_button() {
 }
 
 void mode_button() {
+    // One touch
     printf("Setup\r");
     set_mode++; // Setup clock mode 0 - None,1-Hour,2-Min,3-Sec,4-Week   
     if (set_mode > 4) {
@@ -46,13 +49,56 @@ void mode_button() {
 }
 
 void ring_button() {
-    
+    // One touch
+    ring_disp = !ring_disp; // Change display Time\Ring
+    if (ring_disp) {
+        // Read from EEPROM
+    } else {
+        // Write to EEPROM
+    }
+}
+
+void display() {
+    static char symbol;
+    symbol++;
+    if (symbol > 5) {
+        symbol = 0;
+    }
+    //symbol = 5;    
+    // OFF display   
+    PORTD &= 0x03;
+    PORTC &= 0xF0;
+    PORTB.7 = 1;   
+
+    if (symbol == 0) {
+        PORTC |= (0x0F & (hour / 10));
+    } else if (symbol == 1) {
+        PORTC |= (0x0F & (hour % 10));
+        PORTB.7 = 0;
+    } else if (symbol == 2) {
+        PORTC |= (0x0F & (min / 10));
+    } else if (symbol == 3) {
+        PORTC |= (0x0F & (min % 10));
+    } else if (symbol == 4) {
+        PORTC |= (0x0F & (sec / 10));
+    } else if (symbol == 5) {
+        PORTC |= (0x0F & (sec % 10));
+    }   
+ 
+    if (ring_disp) {
+        if (symbol < 4) {
+            PORTD |= (1 << (2 + symbol)); 
+        }
+    } else {
+        PORTD |= (1 << (2 + symbol));
+        if (symbol == 3) PORTB.7 = 0; 
+    } 
 }
 
 // Timer 0 overflow interrupt service routine
 interrupt [TIM0_OVF] void timer0_ovf_isr(void) {
     // Reinitialize Timer 0 value
-    TCNT0=0xB2;
+    TCNT0=0x83;
     // Place your code here  
     // Read timeout   
     if (get_time > 0) get_time--;   
@@ -67,8 +113,8 @@ interrupt [TIM0_OVF] void timer0_ovf_isr(void) {
     // Long touch    
     if (PINB.0 == 0) {
         bt_set++;
-        if (bt_set > 150) {
-            bt_set = 100;
+        if (bt_set > 1500) {
+            bt_set = 1000;
             set_button();
         }
     } else bt_set = 0;
@@ -88,6 +134,11 @@ interrupt [TIM0_OVF] void timer0_ovf_isr(void) {
         }    
         ring = PINB.2;
     }
+    // Display  4ms - one symbol
+    static char disp;
+    disp++;
+    if (disp > 3) disp = 0;
+    if (disp == 0) display();   
 }
 
 void main(void)
@@ -115,9 +166,9 @@ PORTD=(0<<PORTD7) | (0<<PORTD6) | (0<<PORTD5) | (0<<PORTD4) | (0<<PORTD3) | (0<<
 
 // Timer/Counter 0 initialization
 // Clock source: System Clock
-// Clock value: 7,813 kHz
-TCCR0=(1<<CS02) | (0<<CS01) | (1<<CS00);
-TCNT0=0xB2;
+// Clock value: 125,000 kHz
+TCCR0=(0<<CS02) | (1<<CS01) | (1<<CS00);
+TCNT0=0x83;
 
 // Timer/Counter 1 initialization
 // Clock source: System Clock
@@ -155,10 +206,7 @@ OCR2=0x00;
 // Timer(s)/Counter(s) Interrupt(s) initialization
 TIMSK=(0<<OCIE2) | (0<<TOIE2) | (0<<TICIE1) | (0<<OCIE1A) | (0<<OCIE1B) | (0<<TOIE1) | (1<<TOIE0);
 
-// External Interrupt(s) initialization
-// INT0: Off
-// INT1: Off
-MCUCR=(0<<ISC11) | (0<<ISC10) | (0<<ISC01) | (0<<ISC00);
+
 
 // USART initialization
 // Communication Parameters: 8 Data, 1 Stop, No Parity
@@ -172,26 +220,10 @@ UCSRC=(1<<URSEL) | (0<<UMSEL) | (0<<UPM1) | (0<<UPM0) | (0<<USBS) | (1<<UCSZ1) |
 UBRRH=0x00;
 UBRRL=0x33;
 
-// Analog Comparator initialization
-// Analog Comparator: Off
-// The Analog Comparator's positive input is
-// connected to the AIN0 pin
-// The Analog Comparator's negative input is
-// connected to the AIN1 pin
-ACSR=(1<<ACD) | (0<<ACBG) | (0<<ACO) | (0<<ACI) | (0<<ACIE) | (0<<ACIC) | (0<<ACIS1) | (0<<ACIS0);
-SFIOR=(0<<ACME);
 
-// ADC initialization
-// ADC disabled
-ADCSRA=(0<<ADEN) | (0<<ADSC) | (0<<ADFR) | (0<<ADIF) | (0<<ADIE) | (0<<ADPS2) | (0<<ADPS1) | (0<<ADPS0);
 
-// SPI initialization
-// SPI disabled
-SPCR=(0<<SPIE) | (0<<SPE) | (0<<DORD) | (0<<MSTR) | (0<<CPOL) | (0<<CPHA) | (0<<SPR1) | (0<<SPR0);
 
-// TWI initialization
-// TWI disabled
-TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
+
 
 // Bit-Banged I2C Bus initialization
 // I2C Port: PORTC
@@ -216,13 +248,17 @@ ring = PINB.2;
 
 while (1) {
       // Place your code here     
-      if (get_time < 1) {    
-            if (!set_mode) {
+      if (get_time == 0) {    
+            if (!set_mode && !ring_disp) {
                 rtc_get_time(&hour,&min,&sec);          
                 rtc_get_date(&week,&day,&mon,&year);
                 printf("w%d_%d:%d:%d\r",week,hour,min,sec);  
             } else printf("set_mode:%d: w%d_%d:%d:%d\r",set_mode,week,hour,min,sec);
-            get_time = 100; // 50*10ms = 500ms
+            get_time = 100; // 500*1ms = 500ms     
+            //display();
+      }
+      if (ring_disp) {
+            sec = 0;
       }   
       }   
 }

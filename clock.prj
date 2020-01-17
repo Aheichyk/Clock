@@ -28,7 +28,7 @@ Active0=0
 EditorPanel0=0
 PageIndex0=0
 EditorPanel1=0
-TimeStamp1=1344638542
+TimeStamp1=1345433329
 PageIndex1=1
 OF2=..\..\inc\ds1307.h
 Active2=0
@@ -138,8 +138,8 @@ WatchAVR8LAutoVariables=0
 UseEEPROMLocation0=1
 RebuildAll=0
 LinkageInformationPresent=1
-COFFileTimeStamp=1344638376
-Build=44
+COFFileTimeStamp=1345433330
+Build=72
 [DefinedSymbolsDebug]
 Count=0
 [Compiler]
@@ -241,7 +241,7 @@ UseEEPROMLocation0=1
 RebuildAll=1
 LinkageInformationPresent=0
 COFFileTimeStamp=-1
-Build=44
+Build=72
 [DefinedSymbols]
 Count=0
 [StartUp]
@@ -341,8 +341,8 @@ L13=Enhanced function parameters passing: Yes
 L14=Automatic register allocation: Yes
 L15=Smart register allocation: Yes
 L16=
-L17=Build: 43
-L18=9476 line(s) compiled
+L17=Build: 71
+L18=9513 line(s) compiled
 L19=No errors
 L20=No warnings
 L21=
@@ -352,29 +352,29 @@ L24=Data Stack area: 0x60 to 0x15F
 L25=Data Stack size: 256 byte(s)
 L26=Estimated Data Stack usage: 76 byte(s)
 L27=
-L28=RAM Global variables area: 0x160 to 0x162
-L29=RAM Global variables size: 3 byte(s)
+L28=RAM Global variables area: 0x160 to 0x167
+L29=RAM Global variables size: 8 byte(s)
 L30=
-L31=Hardware Stack area: 0x163 to 0x45F
-L32=Hardware Stack size: 765 byte(s)
+L31=Hardware Stack area: 0x168 to 0x45F
+L32=Hardware Stack size: 760 byte(s)
 L33=
 L34=Heap size: 0 byte(s)
 L35=
 L36=EEPROM usage: 0 byte(s), 0,0% of EEPROM
-L37=Program size: 1066 words (2132 bytes), 26,0% of FLASH
+L37=Program size: 1284 words (2568 bytes), 31,3% of FLASH
 Lines=38
-L38=109 words (218 bytes), 9,3% reduced by Code Compression
+L38=124 words (248 bytes), 8,8% reduced by Code Compression
 [BuildInfoAssembler]
 L1=AVRASM: AVR macro assembler 2.1.30 (build 592 Nov  7 2008 12:38:17)
 L2=Copyright (C) 1995-2008 ATMEL Corporation
 L3=
-L4=C:\cvavr\Projects\clock\Debug\List\clock.asm(2737): No EEPROM data, deleting C:\cvavr\Projects\clock\Debug\Exe\clock.eep
+L4=C:\cvavr\Projects\clock\Debug\List\clock.asm(3046): No EEPROM data, deleting C:\cvavr\Projects\clock\Debug\Exe\clock.eep
 L5=
 L6=ATmega8 memory use summary [bytes]:
 L7=Segment   Begin    End      Code   Data   Used    Size   Use%
 L8=---------------------------------------------------------------
-L9=[.cseg] 0x000000 0x000854   2040     92   2132    8192  26.0%
-L10=[.dseg] 0x000060 0x000163      0      3      3    1024   0.3%
+L9=[.cseg] 0x000000 0x000a08   2476     92   2568    8192  31.3%
+L10=[.dseg] 0x000060 0x000168      0      8      8    1024   0.8%
 L11=[.eseg] 0x000000 0x000000      0      0      0     512   0.0%
 L12=
 Lines=12
@@ -403,30 +403,18 @@ BK8=-1
 BK9=-1
 [FoldedCode1]
 Blocks=0
-[HeadersList]
-Files=1
-F1=C:\cvavr\Projects\clock\clock.c
-[Header1]
-Files=7
-F1=..\..\inc\mega8.h
-F2=..\..\inc\mega8_bits.h
-F3=..\..\inc\i2c.h
-F4=..\..\inc\ds1307.h
-F5=..\..\inc\stdio.h
-F6=..\..\inc\io.h
-F7=..\..\inc\stdarg.h
 [Bookmarks0]
 Row=0
 Column=0
 ScrollPosX=0
 ScrollPosY=0
-TimeStamp=1344638542
+TimeStamp=1345433350
 [Bookmarks2]
-TimeStamp=1344638542
-Row=48
-Column=4
+TimeStamp=1345433329
+Row=208
+Column=0
 ScrollPosX=0
-ScrollPosY=5
+ScrollPosY=140
 BK0=-1
 BK1=-1
 BK2=-1
@@ -437,8 +425,6 @@ BK6=-1
 BK7=-1
 BK8=-1
 BK9=-1
-[FoldedCode2]
-Blocks=0
 [Bookmarks3]
 TimeStamp=1045597212
 Row=21
@@ -455,8 +441,6 @@ BK6=-1
 BK7=-1
 BK8=-1
 BK9=-1
-[FoldedCode3]
-Blocks=0
 [Bookmarks4]
 TimeStamp=1045060692
 Row=25
@@ -473,8 +457,6 @@ BK6=-1
 BK7=-1
 BK8=-1
 BK9=-1
-[FoldedCode4]
-Blocks=0
 [Bookmarks5]
 TimeStamp=1328852497
 Row=0
@@ -492,4 +474,22 @@ BK7=-1
 BK8=-1
 BK9=-1
 [FoldedCode5]
+Blocks=0
+[HeadersList]
+Files=1
+F1=C:\cvavr\Projects\clock\clock.c
+[Header1]
+Files=7
+F1=..\..\inc\mega8.h
+F2=..\..\inc\mega8_bits.h
+F3=..\..\inc\i2c.h
+F4=..\..\inc\ds1307.h
+F5=..\..\inc\stdio.h
+F6=..\..\inc\io.h
+F7=..\..\inc\stdarg.h
+[FoldedCode2]
+Blocks=0
+[FoldedCode3]
+Blocks=0
+[FoldedCode4]
 Blocks=0

@@ -1,9 +1,13 @@
 RAM Allocation [bytes]
 Variable                                                                          Address   Size
 ------------------------------------------------------------------------------------------------
-set                                                                               0x0160       1
-mode                                                                              0x0161       1
-ring                                                                              0x0162       1
+get_time                                                                          0x0160       2
+set                                                                               0x0162       1
+mode                                                                              0x0163       1
+ring                                                                              0x0164       1
+ring_disp                                                                         0x0165       1
+symbol                                                                            0x0166       1
+disp                                                                              0x0167       1
 
 EEPROM Allocation [bytes]
 Variable                                                                          Address   Size
@@ -19,28 +23,28 @@ week                                                                            
 day                                                                               R9           1
 mon                                                                               R8           1
 year                                                                              R11          1
-bt_set                                                                            R10          1
-get_time                                                                          R13          1
-set_mode                                                                          R12          1
+bt_set                                                                            R12,R13      2
+set_mode                                                                          R10          1
 
 FLASH Allocation [words]
 Function                                                                          Address   Size
 ------------------------------------------------------------------------------------------------
 set_button                                                                        0x0006D     44
 mode_button                                                                       0x00099     21
-ring_button                                                                       0x000AE      1
-timer0_ovf_isr                                                                    0x000AF     83
-main                                                                              0x00102    107
-rtc_init                                                                          0x0016D     22
-rtc_get_time                                                                      0x00183     17
-rtc_set_time                                                                      0x00194      8
-rtc_get_date                                                                      0x0019C     17
-rtc_set_date                                                                      0x001AD     11
-putchar                                                                           0x001B8      7
-put_usart_G101                                                                    0x001BF     12
-_print_G101                                                                       0x001CB    278
-printf                                                                            0x002E1     30
-bcd2bin                                                                           0x002FF     13
-bin2bcd                                                                           0x0030C     10
-strlen                                                                            0x00316     11
-strlenf                                                                           0x00321     12
+ring_button                                                                       0x000AE      5
+display                                                                           0x000B3     84
+timer0_ovf_isr                                                                    0x00107    115
+main                                                                              0x0017A    114
+rtc_init                                                                          0x001EC     22
+rtc_get_time                                                                      0x00202     17
+rtc_set_time                                                                      0x00213      8
+rtc_get_date                                                                      0x0021B     17
+rtc_set_date                                                                      0x0022C     11
+putchar                                                                           0x00237      7
+put_usart_G101                                                                    0x0023E     12
+_print_G101                                                                       0x0024A    278
+printf                                                                            0x00360     30
+bcd2bin                                                                           0x0037E     13
+bin2bcd                                                                           0x0038B     10
+strlen                                                                            0x00395     11
+strlenf                                                                           0x003A0     12

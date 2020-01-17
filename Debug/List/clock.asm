@@ -1090,9 +1090,9 @@ __DELAY_USW_LOOP:
 	.DEF _day=R9
 	.DEF _mon=R8
 	.DEF _year=R11
-	.DEF _bt_set=R10
-	.DEF _get_time=R13
-	.DEF _set_mode=R12
+	.DEF _bt_set=R12
+	.DEF _bt_set_msb=R13
+	.DEF _set_mode=R10
 
 	.CSEG
 	.ORG 0x00
@@ -1247,83 +1247,85 @@ __GLOBAL_INI_END:
 ;
 ;// Declare your global variables here
 ;unsigned char hour,min,sec,week,day,mon,year;
-;unsigned char bt_set=0;
-;unsigned char get_time=0;
+;unsigned int bt_set=0;
+;unsigned int get_time=0;
 ;unsigned char set_mode=0;
 ;unsigned char set;
 ;unsigned char mode;
 ;unsigned char ring;
+;unsigned char ring_disp=0;
 ;
 ;void set_button() {
-; 0000 0015 void set_button() {
+; 0000 0016 void set_button() {
 
 	.CSEG
 _set_button:
 ; .FSTART _set_button
-; 0000 0016     printf("Set:mode:%d\r",set_mode);
+; 0000 0017     // Long & One touch
+; 0000 0018     printf("Set:mode:%d\r",set_mode);
 	__POINTW1FN _0x0,0
 	RCALL SUBOPT_0x0
 	RCALL SUBOPT_0x1
 	LDI  R24,4
 	RCALL _printf
 	ADIW R28,6
-; 0000 0017     if (set_mode==1) {
+; 0000 0019     if (set_mode==1) {
 	LDI  R30,LOW(1)
-	CP   R30,R12
+	CP   R30,R10
 	BRNE _0x3
-; 0000 0018         hour++;
+; 0000 001A         hour++;
 	INC  R5
-; 0000 0019         if (hour > 23) hour=0;
+; 0000 001B         if (hour > 23) hour=0;
 	LDI  R30,LOW(23)
 	CP   R30,R5
 	BRSH _0x4
 	CLR  R5
-; 0000 001A     } else if (set_mode==2) {
+; 0000 001C     } else if (set_mode==2) {
 _0x4:
 	RJMP _0x5
 _0x3:
 	LDI  R30,LOW(2)
-	CP   R30,R12
+	CP   R30,R10
 	BRNE _0x6
-; 0000 001B         min++;
+; 0000 001D         min++;
 	INC  R4
-; 0000 001C         if (min > 59)  min=0;
+; 0000 001E         if (min > 59)  min=0;
 	LDI  R30,LOW(59)
 	CP   R30,R4
 	BRSH _0x7
 	CLR  R4
-; 0000 001D     } else if (set_mode==3) {
+; 0000 001F     } else if (set_mode==3) {
 _0x7:
 	RJMP _0x8
 _0x6:
 	LDI  R30,LOW(3)
-	CP   R30,R12
+	CP   R30,R10
 	BRNE _0x9
-; 0000 001E         sec++;
+; 0000 0020         sec++;
 	INC  R7
-; 0000 001F         if (sec > 59) sec=0;
+; 0000 0021         if (sec > 59) sec=0;
 	LDI  R30,LOW(59)
 	CP   R30,R7
 	BRSH _0xA
 	CLR  R7
-; 0000 0020     } else if (set_mode==4) {
+; 0000 0022     } else if (set_mode==4) {
 _0xA:
 	RJMP _0xB
 _0x9:
 	LDI  R30,LOW(4)
-	CP   R30,R12
+	CP   R30,R10
 	BRNE _0xC
-; 0000 0021         week++;
+; 0000 0023         week++;
 	INC  R6
-; 0000 0022         if (week > 7) week=1;
+; 0000 0024         if (week > 7) week=1;
 	LDI  R30,LOW(7)
 	CP   R30,R6
 	BRSH _0xD
 	LDI  R30,LOW(1)
 	MOV  R6,R30
-; 0000 0023     }
+; 0000 0025     }
 _0xD:
-; 0000 0024 }
+; 0000 0026 }
 _0xC:
 _0xB:
 _0x8:
@@ -1332,51 +1334,199 @@ _0x5:
 ; .FEND
 ;
 ;void mode_button() {
-; 0000 0026 void mode_button() {
+; 0000 0028 void mode_button() {
 _mode_button:
 ; .FSTART _mode_button
-; 0000 0027     printf("Setup\r");
+; 0000 0029     // One touch
+; 0000 002A     printf("Setup\r");
 	__POINTW1FN _0x0,13
 	RCALL SUBOPT_0x0
 	LDI  R24,0
 	RCALL _printf
 	ADIW R28,2
-; 0000 0028     set_mode++; // Setup clock mode 0 - None,1-Hour,2-Min,3-Sec,4-Week
-	INC  R12
-; 0000 0029     if (set_mode > 4) {
+; 0000 002B     set_mode++; // Setup clock mode 0 - None,1-Hour,2-Min,3-Sec,4-Week
+	INC  R10
+; 0000 002C     if (set_mode > 4) {
 	LDI  R30,LOW(4)
-	CP   R30,R12
+	CP   R30,R10
 	BRSH _0xE
-; 0000 002A         set_mode=0;
-	CLR  R12
-; 0000 002B         rtc_set_time(hour,min,sec);
+; 0000 002D         set_mode=0;
+	CLR  R10
+; 0000 002E         rtc_set_time(hour,min,sec);
 	ST   -Y,R5
 	ST   -Y,R4
 	MOV  R26,R7
 	RCALL _rtc_set_time
-; 0000 002C         rtc_set_date(week,day,mon,year);
+; 0000 002F         rtc_set_date(week,day,mon,year);
 	ST   -Y,R6
 	ST   -Y,R9
 	ST   -Y,R8
 	MOV  R26,R11
 	RCALL _rtc_set_date
-; 0000 002D     }
-; 0000 002E }
+; 0000 0030     }
+; 0000 0031 }
 _0xE:
 	RET
 ; .FEND
 ;
 ;void ring_button() {
-; 0000 0030 void ring_button() {
+; 0000 0033 void ring_button() {
 _ring_button:
 ; .FSTART _ring_button
-; 0000 0031 }
+; 0000 0034     // One touch
+; 0000 0035     ring_disp = !ring_disp; // Change display Time\Ring
+	RCALL SUBOPT_0x2
+	RCALL __LNEGB1
+	STS  _ring_disp,R30
+; 0000 0036     if (ring_disp) {
+; 0000 0037         // Read from EEPROM
+; 0000 0038     } else {
+; 0000 0039         // Write to EEPROM
+; 0000 003A     }
+; 0000 003B }
+	RET
+; .FEND
+;
+;void display() {
+; 0000 003D void display() {
+_display:
+; .FSTART _display
+; 0000 003E     static char symbol;
+; 0000 003F     symbol++;
+	RCALL SUBOPT_0x3
+	SUBI R30,-LOW(1)
+	STS  _symbol_S0000003000,R30
+; 0000 0040     if (symbol > 5) {
+	RCALL SUBOPT_0x4
+	CPI  R26,LOW(0x6)
+	BRLO _0x11
+; 0000 0041         symbol = 0;
+	LDI  R30,LOW(0)
+	STS  _symbol_S0000003000,R30
+; 0000 0042     }
+; 0000 0043     //symbol = 5;
+; 0000 0044     // OFF display
+; 0000 0045     PORTD &= 0x03;
+_0x11:
+	IN   R30,0x12
+	ANDI R30,LOW(0x3)
+	OUT  0x12,R30
+; 0000 0046     PORTC &= 0xF0;
+	IN   R30,0x15
+	ANDI R30,LOW(0xF0)
+	OUT  0x15,R30
+; 0000 0047     PORTB.7 = 1;
+	SBI  0x18,7
+; 0000 0048 
+; 0000 0049     if (symbol == 0) {
+	RCALL SUBOPT_0x3
+	CPI  R30,0
+	BRNE _0x14
+; 0000 004A         PORTC |= (0x0F & (hour / 10));
+	IN   R22,21
+	MOV  R26,R5
+	RCALL SUBOPT_0x5
+	RJMP _0x3D
+; 0000 004B     } else if (symbol == 1) {
+_0x14:
+	RCALL SUBOPT_0x4
+	CPI  R26,LOW(0x1)
+	BRNE _0x16
+; 0000 004C         PORTC |= (0x0F & (hour % 10));
+	IN   R22,21
+	MOV  R26,R5
+	CLR  R27
+	LDI  R30,LOW(10)
+	LDI  R31,HIGH(10)
+	RCALL __MODW21
+	ANDI R30,LOW(0xF)
+	OR   R30,R22
+	OUT  0x15,R30
+; 0000 004D         PORTB.7 = 0;
+	CBI  0x18,7
+; 0000 004E     } else if (symbol == 2) {
+	RJMP _0x19
+_0x16:
+	RCALL SUBOPT_0x4
+	CPI  R26,LOW(0x2)
+	BRNE _0x1A
+; 0000 004F         PORTC |= (0x0F & (min / 10));
+	IN   R22,21
+	MOV  R26,R4
+	RCALL SUBOPT_0x5
+	RJMP _0x3D
+; 0000 0050     } else if (symbol == 3) {
+_0x1A:
+	RCALL SUBOPT_0x4
+	CPI  R26,LOW(0x3)
+	BRNE _0x1C
+; 0000 0051         PORTC |= (0x0F & (min % 10));
+	IN   R22,21
+	MOV  R26,R4
+	RJMP _0x3E
+; 0000 0052     } else if (symbol == 4) {
+_0x1C:
+	RCALL SUBOPT_0x4
+	CPI  R26,LOW(0x4)
+	BRNE _0x1E
+; 0000 0053         PORTC |= (0x0F & (sec / 10));
+	IN   R22,21
+	MOV  R26,R7
+	RCALL SUBOPT_0x5
+	RJMP _0x3D
+; 0000 0054     } else if (symbol == 5) {
+_0x1E:
+	RCALL SUBOPT_0x4
+	CPI  R26,LOW(0x5)
+	BRNE _0x20
+; 0000 0055         PORTC |= (0x0F & (sec % 10));
+	IN   R22,21
+	MOV  R26,R7
+_0x3E:
+	CLR  R27
+	LDI  R30,LOW(10)
+	LDI  R31,HIGH(10)
+	RCALL __MODW21
+_0x3D:
+	ANDI R30,LOW(0xF)
+	OR   R30,R22
+	OUT  0x15,R30
+; 0000 0056     }
+; 0000 0057 
+; 0000 0058     if (ring_disp) {
+_0x20:
+_0x19:
+	RCALL SUBOPT_0x2
+	CPI  R30,0
+	BREQ _0x21
+; 0000 0059         if (symbol < 4) {
+	RCALL SUBOPT_0x4
+	CPI  R26,LOW(0x4)
+	BRSH _0x22
+; 0000 005A             PORTD |= (1 << (2 + symbol));
+	RCALL SUBOPT_0x6
+; 0000 005B         }
+; 0000 005C     } else {
+_0x22:
+	RJMP _0x23
+_0x21:
+; 0000 005D         PORTD |= (1 << (2 + symbol));
+	RCALL SUBOPT_0x6
+; 0000 005E         if (symbol == 3) PORTB.7 = 0;
+	RCALL SUBOPT_0x4
+	CPI  R26,LOW(0x3)
+	BRNE _0x24
+	CBI  0x18,7
+; 0000 005F     }
+_0x24:
+_0x23:
+; 0000 0060 }
 	RET
 ; .FEND
 ;
 ;// Timer 0 overflow interrupt service routine
 ;interrupt [TIM0_OVF] void timer0_ovf_isr(void) {
-; 0000 0034 interrupt [10] void timer0_ovf_isr(void) {
+; 0000 0063 interrupt [10] void timer0_ovf_isr(void) {
 _timer0_ovf_isr:
 ; .FSTART _timer0_ovf_isr
 	ST   -Y,R0
@@ -1392,104 +1542,136 @@ _timer0_ovf_isr:
 	ST   -Y,R31
 	IN   R30,SREG
 	ST   -Y,R30
-; 0000 0035     // Reinitialize Timer 0 value
-; 0000 0036     TCNT0=0xB2;
-	LDI  R30,LOW(178)
+; 0000 0064     // Reinitialize Timer 0 value
+; 0000 0065     TCNT0=0x83;
+	LDI  R30,LOW(131)
 	OUT  0x32,R30
-; 0000 0037     // Place your code here
-; 0000 0038     // Read timeout
-; 0000 0039     if (get_time > 0) get_time--;
-	LDI  R30,LOW(0)
-	CP   R30,R13
-	BRSH _0xF
-	DEC  R13
-; 0000 003A     // One touch
-; 0000 003B     if (PINB.0 != set) {
-_0xF:
+; 0000 0066     // Place your code here
+; 0000 0067     // Read timeout
+; 0000 0068     if (get_time > 0) get_time--;
+	LDS  R26,_get_time
+	LDS  R27,_get_time+1
+	RCALL __CPW02
+	BRSH _0x27
+	LDI  R26,LOW(_get_time)
+	LDI  R27,HIGH(_get_time)
+	LD   R30,X+
+	LD   R31,X+
+	SBIW R30,1
+	ST   -X,R31
+	ST   -X,R30
+; 0000 0069     // One touch
+; 0000 006A     if (PINB.0 != set) {
+_0x27:
 	LDI  R26,0
 	SBIC 0x16,0
 	LDI  R26,1
 	LDS  R30,_set
-	RCALL SUBOPT_0x2
-	BREQ _0x10
-; 0000 003C         if (!set) {
+	RCALL SUBOPT_0x7
+	BREQ _0x28
+; 0000 006B         if (!set) {
 	LDS  R30,_set
 	CPI  R30,0
-	BRNE _0x11
-; 0000 003D             // Button released
-; 0000 003E             set_button();
+	BRNE _0x29
+; 0000 006C             // Button released
+; 0000 006D             set_button();
 	RCALL _set_button
-; 0000 003F         }
-; 0000 0040         set = PINB.0;
-_0x11:
-	RCALL SUBOPT_0x3
-; 0000 0041     }
-; 0000 0042     // Long touch
-; 0000 0043     if (PINB.0 == 0) {
-_0x10:
+; 0000 006E         }
+; 0000 006F         set = PINB.0;
+_0x29:
+	RCALL SUBOPT_0x8
+; 0000 0070     }
+; 0000 0071     // Long touch
+; 0000 0072     if (PINB.0 == 0) {
+_0x28:
 	SBIC 0x16,0
-	RJMP _0x12
-; 0000 0044         bt_set++;
-	INC  R10
-; 0000 0045         if (bt_set > 150) {
-	LDI  R30,LOW(150)
-	CP   R30,R10
-	BRSH _0x13
-; 0000 0046             bt_set = 100;
-	LDI  R30,LOW(100)
-	MOV  R10,R30
-; 0000 0047             set_button();
+	RJMP _0x2A
+; 0000 0073         bt_set++;
+	MOVW R30,R12
+	ADIW R30,1
+	MOVW R12,R30
+; 0000 0074         if (bt_set > 1500) {
+	LDI  R30,LOW(1500)
+	LDI  R31,HIGH(1500)
+	CP   R30,R12
+	CPC  R31,R13
+	BRSH _0x2B
+; 0000 0075             bt_set = 1000;
+	LDI  R30,LOW(1000)
+	LDI  R31,HIGH(1000)
+	MOVW R12,R30
+; 0000 0076             set_button();
 	RCALL _set_button
-; 0000 0048         }
-; 0000 0049     } else bt_set = 0;
-_0x13:
-	RJMP _0x14
-_0x12:
-	CLR  R10
-; 0000 004A     // One touch
-; 0000 004B     if (PINB.1 != mode) {
-_0x14:
+; 0000 0077         }
+; 0000 0078     } else bt_set = 0;
+_0x2B:
+	RJMP _0x2C
+_0x2A:
+	CLR  R12
+	CLR  R13
+; 0000 0079     // One touch
+; 0000 007A     if (PINB.1 != mode) {
+_0x2C:
 	LDI  R26,0
 	SBIC 0x16,1
 	LDI  R26,1
 	LDS  R30,_mode
-	RCALL SUBOPT_0x2
-	BREQ _0x15
-; 0000 004C         if (!mode) {
+	RCALL SUBOPT_0x7
+	BREQ _0x2D
+; 0000 007B         if (!mode) {
 	LDS  R30,_mode
 	CPI  R30,0
-	BRNE _0x16
-; 0000 004D             // Button released
-; 0000 004E             mode_button();
+	BRNE _0x2E
+; 0000 007C             // Button released
+; 0000 007D             mode_button();
 	RCALL _mode_button
-; 0000 004F         }
-; 0000 0050         mode = PINB.1;
-_0x16:
-	RCALL SUBOPT_0x4
-; 0000 0051     }
-; 0000 0052     // One touch
-; 0000 0053     if (PINB.2 != ring) {
-_0x15:
+; 0000 007E         }
+; 0000 007F         mode = PINB.1;
+_0x2E:
+	RCALL SUBOPT_0x9
+; 0000 0080     }
+; 0000 0081     // One touch
+; 0000 0082     if (PINB.2 != ring) {
+_0x2D:
 	LDI  R26,0
 	SBIC 0x16,2
 	LDI  R26,1
 	LDS  R30,_ring
-	RCALL SUBOPT_0x2
-	BREQ _0x17
-; 0000 0054         if (!ring) {
+	RCALL SUBOPT_0x7
+	BREQ _0x2F
+; 0000 0083         if (!ring) {
 	LDS  R30,_ring
 	CPI  R30,0
-	BRNE _0x18
-; 0000 0055             // Button released
-; 0000 0056             ring_button();
+	BRNE _0x30
+; 0000 0084             // Button released
+; 0000 0085             ring_button();
 	RCALL _ring_button
-; 0000 0057         }
-; 0000 0058         ring = PINB.2;
-_0x18:
-	RCALL SUBOPT_0x5
-; 0000 0059     }
-; 0000 005A }
-_0x17:
+; 0000 0086         }
+; 0000 0087         ring = PINB.2;
+_0x30:
+	RCALL SUBOPT_0xA
+; 0000 0088     }
+; 0000 0089     // Display  4ms - one symbol
+; 0000 008A     static char disp;
+_0x2F:
+; 0000 008B     disp++;
+	LDS  R30,_disp_S0000004000
+	SUBI R30,-LOW(1)
+	STS  _disp_S0000004000,R30
+; 0000 008C     if (disp > 3) disp = 0;
+	LDS  R26,_disp_S0000004000
+	CPI  R26,LOW(0x4)
+	BRLO _0x31
+	LDI  R30,LOW(0)
+	STS  _disp_S0000004000,R30
+; 0000 008D     if (disp == 0) display();
+_0x31:
+	LDS  R30,_disp_S0000004000
+	CPI  R30,0
+	BRNE _0x32
+	RCALL _display
+; 0000 008E }
+_0x32:
 	LD   R30,Y+
 	OUT  SREG,R30
 	LD   R31,Y+
@@ -1507,203 +1689,183 @@ _0x17:
 ; .FEND
 ;
 ;void main(void)
-; 0000 005D {
+; 0000 0091 {
 _main:
 ; .FSTART _main
-; 0000 005E // Declare your local variables here
-; 0000 005F 
-; 0000 0060 // Input/Output Ports initialization
-; 0000 0061 // Port B initialization
-; 0000 0062 // Function: Bit7=Out Bit6=Out Bit5=Out Bit4=Out Bit3=Out Bit2=In Bit1=In Bit0=In
-; 0000 0063 DDRB=(1<<DDB7) | (1<<DDB6) | (1<<DDB5) | (1<<DDB4) | (1<<DDB3) | (0<<DDB2) | (0<<DDB1) | (0<<DDB0);
+; 0000 0092 // Declare your local variables here
+; 0000 0093 
+; 0000 0094 // Input/Output Ports initialization
+; 0000 0095 // Port B initialization
+; 0000 0096 // Function: Bit7=Out Bit6=Out Bit5=Out Bit4=Out Bit3=Out Bit2=In Bit1=In Bit0=In
+; 0000 0097 DDRB=(1<<DDB7) | (1<<DDB6) | (1<<DDB5) | (1<<DDB4) | (1<<DDB3) | (0<<DDB2) | (0<<DDB1) | (0<<DDB0);
 	LDI  R30,LOW(248)
 	OUT  0x17,R30
-; 0000 0064 // State: Bit7=0 Bit6=0 Bit5=0 Bit4=0 Bit3=0 Bit2=0 Bit1=1 Bit0=1
-; 0000 0065 PORTB=(0<<PORTB7) | (0<<PORTB6) | (0<<PORTB5) | (0<<PORTB4) | (0<<PORTB3) | (1<<PORTB2) | (1<<PORTB1) | (1<<PORTB0);
+; 0000 0098 // State: Bit7=0 Bit6=0 Bit5=0 Bit4=0 Bit3=0 Bit2=0 Bit1=1 Bit0=1
+; 0000 0099 PORTB=(0<<PORTB7) | (0<<PORTB6) | (0<<PORTB5) | (0<<PORTB4) | (0<<PORTB3) | (1<<PORTB2) | (1<<PORTB1) | (1<<PORTB0);
 	LDI  R30,LOW(7)
 	OUT  0x18,R30
-; 0000 0066 
-; 0000 0067 // Port C initialization
-; 0000 0068 // Function: Bit6=Out Bit5=Out Bit4=Out Bit3=Out Bit2=Out Bit1=Out Bit0=Out
-; 0000 0069 DDRC=(1<<DDC6) | (1<<DDC5) | (1<<DDC4) | (1<<DDC3) | (1<<DDC2) | (1<<DDC1) | (1<<DDC0);
+; 0000 009A 
+; 0000 009B // Port C initialization
+; 0000 009C // Function: Bit6=Out Bit5=Out Bit4=Out Bit3=Out Bit2=Out Bit1=Out Bit0=Out
+; 0000 009D DDRC=(1<<DDC6) | (1<<DDC5) | (1<<DDC4) | (1<<DDC3) | (1<<DDC2) | (1<<DDC1) | (1<<DDC0);
 	LDI  R30,LOW(127)
 	OUT  0x14,R30
-; 0000 006A // State: Bit6=0 Bit5=0 Bit4=0 Bit3=0 Bit2=0 Bit1=0 Bit0=0
-; 0000 006B PORTC=(0<<PORTC6) | (0<<PORTC5) | (0<<PORTC4) | (0<<PORTC3) | (0<<PORTC2) | (0<<PORTC1) | (0<<PORTC0);
+; 0000 009E // State: Bit6=0 Bit5=0 Bit4=0 Bit3=0 Bit2=0 Bit1=0 Bit0=0
+; 0000 009F PORTC=(0<<PORTC6) | (0<<PORTC5) | (0<<PORTC4) | (0<<PORTC3) | (0<<PORTC2) | (0<<PORTC1) | (0<<PORTC0);
 	LDI  R30,LOW(0)
 	OUT  0x15,R30
-; 0000 006C 
-; 0000 006D // Port D initialization
-; 0000 006E // Function: Bit7=Out Bit6=Out Bit5=Out Bit4=Out Bit3=Out Bit2=Out Bit1=Out Bit0=Out
-; 0000 006F DDRD=(1<<DDD7) | (1<<DDD6) | (1<<DDD5) | (1<<DDD4) | (1<<DDD3) | (1<<DDD2) | (1<<DDD1) | (1<<DDD0);
+; 0000 00A0 
+; 0000 00A1 // Port D initialization
+; 0000 00A2 // Function: Bit7=Out Bit6=Out Bit5=Out Bit4=Out Bit3=Out Bit2=Out Bit1=Out Bit0=Out
+; 0000 00A3 DDRD=(1<<DDD7) | (1<<DDD6) | (1<<DDD5) | (1<<DDD4) | (1<<DDD3) | (1<<DDD2) | (1<<DDD1) | (1<<DDD0);
 	LDI  R30,LOW(255)
 	OUT  0x11,R30
-; 0000 0070 // State: Bit7=0 Bit6=0 Bit5=0 Bit4=0 Bit3=0 Bit2=0 Bit1=0 Bit0=0
-; 0000 0071 PORTD=(0<<PORTD7) | (0<<PORTD6) | (0<<PORTD5) | (0<<PORTD4) | (0<<PORTD3) | (0<<PORTD2) | (0<<PORTD1) | (0<<PORTD0);
+; 0000 00A4 // State: Bit7=0 Bit6=0 Bit5=0 Bit4=0 Bit3=0 Bit2=0 Bit1=0 Bit0=0
+; 0000 00A5 PORTD=(0<<PORTD7) | (0<<PORTD6) | (0<<PORTD5) | (0<<PORTD4) | (0<<PORTD3) | (0<<PORTD2) | (0<<PORTD1) | (0<<PORTD0);
 	LDI  R30,LOW(0)
 	OUT  0x12,R30
-; 0000 0072 
-; 0000 0073 // Timer/Counter 0 initialization
-; 0000 0074 // Clock source: System Clock
-; 0000 0075 // Clock value: 7,813 kHz
-; 0000 0076 TCCR0=(1<<CS02) | (0<<CS01) | (1<<CS00);
-	LDI  R30,LOW(5)
+; 0000 00A6 
+; 0000 00A7 // Timer/Counter 0 initialization
+; 0000 00A8 // Clock source: System Clock
+; 0000 00A9 // Clock value: 125,000 kHz
+; 0000 00AA TCCR0=(0<<CS02) | (1<<CS01) | (1<<CS00);
+	LDI  R30,LOW(3)
 	OUT  0x33,R30
-; 0000 0077 TCNT0=0xB2;
-	LDI  R30,LOW(178)
+; 0000 00AB TCNT0=0x83;
+	LDI  R30,LOW(131)
 	OUT  0x32,R30
-; 0000 0078 
-; 0000 0079 // Timer/Counter 1 initialization
-; 0000 007A // Clock source: System Clock
-; 0000 007B // Clock value: Timer1 Stopped
-; 0000 007C // Mode: Normal top=0xFFFF
-; 0000 007D // OC1A output: Disconnected
-; 0000 007E // OC1B output: Disconnected
-; 0000 007F // Noise Canceler: Off
-; 0000 0080 // Input Capture on Falling Edge
-; 0000 0081 // Timer1 Overflow Interrupt: Off
-; 0000 0082 // Input Capture Interrupt: Off
-; 0000 0083 // Compare A Match Interrupt: Off
-; 0000 0084 // Compare B Match Interrupt: Off
-; 0000 0085 TCCR1A=(0<<COM1A1) | (0<<COM1A0) | (0<<COM1B1) | (0<<COM1B0) | (0<<WGM11) | (0<<WGM10);
+; 0000 00AC 
+; 0000 00AD // Timer/Counter 1 initialization
+; 0000 00AE // Clock source: System Clock
+; 0000 00AF // Clock value: Timer1 Stopped
+; 0000 00B0 // Mode: Normal top=0xFFFF
+; 0000 00B1 // OC1A output: Disconnected
+; 0000 00B2 // OC1B output: Disconnected
+; 0000 00B3 // Noise Canceler: Off
+; 0000 00B4 // Input Capture on Falling Edge
+; 0000 00B5 // Timer1 Overflow Interrupt: Off
+; 0000 00B6 // Input Capture Interrupt: Off
+; 0000 00B7 // Compare A Match Interrupt: Off
+; 0000 00B8 // Compare B Match Interrupt: Off
+; 0000 00B9 TCCR1A=(0<<COM1A1) | (0<<COM1A0) | (0<<COM1B1) | (0<<COM1B0) | (0<<WGM11) | (0<<WGM10);
 	LDI  R30,LOW(0)
 	OUT  0x2F,R30
-; 0000 0086 TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (0<<CS12) | (0<<CS11) | (0<<CS10);
+; 0000 00BA TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (0<<CS12) | (0<<CS11) | (0<<CS10);
 	OUT  0x2E,R30
-; 0000 0087 TCNT1H=0x00;
+; 0000 00BB TCNT1H=0x00;
 	OUT  0x2D,R30
-; 0000 0088 TCNT1L=0x00;
+; 0000 00BC TCNT1L=0x00;
 	OUT  0x2C,R30
-; 0000 0089 ICR1H=0x00;
+; 0000 00BD ICR1H=0x00;
 	OUT  0x27,R30
-; 0000 008A ICR1L=0x00;
+; 0000 00BE ICR1L=0x00;
 	OUT  0x26,R30
-; 0000 008B OCR1AH=0x00;
+; 0000 00BF OCR1AH=0x00;
 	OUT  0x2B,R30
-; 0000 008C OCR1AL=0x00;
+; 0000 00C0 OCR1AL=0x00;
 	OUT  0x2A,R30
-; 0000 008D OCR1BH=0x00;
+; 0000 00C1 OCR1BH=0x00;
 	OUT  0x29,R30
-; 0000 008E OCR1BL=0x00;
+; 0000 00C2 OCR1BL=0x00;
 	OUT  0x28,R30
-; 0000 008F 
-; 0000 0090 // Timer/Counter 2 initialization
-; 0000 0091 // Clock source: System Clock
-; 0000 0092 // Clock value: Timer2 Stopped
-; 0000 0093 // Mode: Normal top=0xFF
-; 0000 0094 // OC2 output: Disconnected
-; 0000 0095 ASSR=0<<AS2;
+; 0000 00C3 
+; 0000 00C4 // Timer/Counter 2 initialization
+; 0000 00C5 // Clock source: System Clock
+; 0000 00C6 // Clock value: Timer2 Stopped
+; 0000 00C7 // Mode: Normal top=0xFF
+; 0000 00C8 // OC2 output: Disconnected
+; 0000 00C9 ASSR=0<<AS2;
 	OUT  0x22,R30
-; 0000 0096 TCCR2=(0<<PWM2) | (0<<COM21) | (0<<COM20) | (0<<CTC2) | (0<<CS22) | (0<<CS21) | (0<<CS20);
+; 0000 00CA TCCR2=(0<<PWM2) | (0<<COM21) | (0<<COM20) | (0<<CTC2) | (0<<CS22) | (0<<CS21) | (0<<CS20);
 	OUT  0x25,R30
-; 0000 0097 TCNT2=0x00;
+; 0000 00CB TCNT2=0x00;
 	OUT  0x24,R30
-; 0000 0098 OCR2=0x00;
+; 0000 00CC OCR2=0x00;
 	OUT  0x23,R30
-; 0000 0099 
-; 0000 009A // Timer(s)/Counter(s) Interrupt(s) initialization
-; 0000 009B TIMSK=(0<<OCIE2) | (0<<TOIE2) | (0<<TICIE1) | (0<<OCIE1A) | (0<<OCIE1B) | (0<<TOIE1) | (1<<TOIE0);
+; 0000 00CD 
+; 0000 00CE // Timer(s)/Counter(s) Interrupt(s) initialization
+; 0000 00CF TIMSK=(0<<OCIE2) | (0<<TOIE2) | (0<<TICIE1) | (0<<OCIE1A) | (0<<OCIE1B) | (0<<TOIE1) | (1<<TOIE0);
 	LDI  R30,LOW(1)
 	OUT  0x39,R30
-; 0000 009C 
-; 0000 009D // External Interrupt(s) initialization
-; 0000 009E // INT0: Off
-; 0000 009F // INT1: Off
-; 0000 00A0 MCUCR=(0<<ISC11) | (0<<ISC10) | (0<<ISC01) | (0<<ISC00);
+; 0000 00D0 
+; 0000 00D1 
+; 0000 00D2 
+; 0000 00D3 // USART initialization
+; 0000 00D4 // Communication Parameters: 8 Data, 1 Stop, No Parity
+; 0000 00D5 // USART Receiver: Off
+; 0000 00D6 // USART Transmitter: On
+; 0000 00D7 // USART Mode: Asynchronous
+; 0000 00D8 // USART Baud Rate: 9600
+; 0000 00D9 UCSRA=(0<<RXC) | (0<<TXC) | (0<<UDRE) | (0<<FE) | (0<<DOR) | (0<<UPE) | (0<<U2X) | (0<<MPCM);
 	LDI  R30,LOW(0)
-	OUT  0x35,R30
-; 0000 00A1 
-; 0000 00A2 // USART initialization
-; 0000 00A3 // Communication Parameters: 8 Data, 1 Stop, No Parity
-; 0000 00A4 // USART Receiver: Off
-; 0000 00A5 // USART Transmitter: On
-; 0000 00A6 // USART Mode: Asynchronous
-; 0000 00A7 // USART Baud Rate: 9600
-; 0000 00A8 UCSRA=(0<<RXC) | (0<<TXC) | (0<<UDRE) | (0<<FE) | (0<<DOR) | (0<<UPE) | (0<<U2X) | (0<<MPCM);
 	OUT  0xB,R30
-; 0000 00A9 UCSRB=(0<<RXCIE) | (0<<TXCIE) | (0<<UDRIE) | (0<<RXEN) | (1<<TXEN) | (0<<UCSZ2) | (0<<RXB8) | (0<<TXB8);
+; 0000 00DA UCSRB=(0<<RXCIE) | (0<<TXCIE) | (0<<UDRIE) | (0<<RXEN) | (1<<TXEN) | (0<<UCSZ2) | (0<<RXB8) | (0<<TXB8);
 	LDI  R30,LOW(8)
 	OUT  0xA,R30
-; 0000 00AA UCSRC=(1<<URSEL) | (0<<UMSEL) | (0<<UPM1) | (0<<UPM0) | (0<<USBS) | (1<<UCSZ1) | (1<<UCSZ0) | (0<<UCPOL);
+; 0000 00DB UCSRC=(1<<URSEL) | (0<<UMSEL) | (0<<UPM1) | (0<<UPM0) | (0<<USBS) | (1<<UCSZ1) | (1<<UCSZ0) | (0<<UCPOL);
 	LDI  R30,LOW(134)
 	OUT  0x20,R30
-; 0000 00AB UBRRH=0x00;
+; 0000 00DC UBRRH=0x00;
 	LDI  R30,LOW(0)
 	OUT  0x20,R30
-; 0000 00AC UBRRL=0x33;
+; 0000 00DD UBRRL=0x33;
 	LDI  R30,LOW(51)
 	OUT  0x9,R30
-; 0000 00AD 
-; 0000 00AE // Analog Comparator initialization
-; 0000 00AF // Analog Comparator: Off
-; 0000 00B0 // The Analog Comparator's positive input is
-; 0000 00B1 // connected to the AIN0 pin
-; 0000 00B2 // The Analog Comparator's negative input is
-; 0000 00B3 // connected to the AIN1 pin
-; 0000 00B4 ACSR=(1<<ACD) | (0<<ACBG) | (0<<ACO) | (0<<ACI) | (0<<ACIE) | (0<<ACIC) | (0<<ACIS1) | (0<<ACIS0);
-	LDI  R30,LOW(128)
-	OUT  0x8,R30
-; 0000 00B5 SFIOR=(0<<ACME);
-	LDI  R30,LOW(0)
-	OUT  0x30,R30
-; 0000 00B6 
-; 0000 00B7 // ADC initialization
-; 0000 00B8 // ADC disabled
-; 0000 00B9 ADCSRA=(0<<ADEN) | (0<<ADSC) | (0<<ADFR) | (0<<ADIF) | (0<<ADIE) | (0<<ADPS2) | (0<<ADPS1) | (0<<ADPS0);
-	OUT  0x6,R30
-; 0000 00BA 
-; 0000 00BB // SPI initialization
-; 0000 00BC // SPI disabled
-; 0000 00BD SPCR=(0<<SPIE) | (0<<SPE) | (0<<DORD) | (0<<MSTR) | (0<<CPOL) | (0<<CPHA) | (0<<SPR1) | (0<<SPR0);
-	OUT  0xD,R30
-; 0000 00BE 
-; 0000 00BF // TWI initialization
-; 0000 00C0 // TWI disabled
-; 0000 00C1 TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
-	OUT  0x36,R30
-; 0000 00C2 
-; 0000 00C3 // Bit-Banged I2C Bus initialization
-; 0000 00C4 // I2C Port: PORTC
-; 0000 00C5 // I2C SDA bit: 4
-; 0000 00C6 // I2C SCL bit: 5
-; 0000 00C7 // Bit Rate: 100 kHz
-; 0000 00C8 // Note: I2C settings are specified in the
-; 0000 00C9 // Project|Configure|C Compiler|Libraries|I2C menu.
-; 0000 00CA i2c_init();
+; 0000 00DE 
+; 0000 00DF 
+; 0000 00E0 
+; 0000 00E1 
+; 0000 00E2 
+; 0000 00E3 
+; 0000 00E4 // Bit-Banged I2C Bus initialization
+; 0000 00E5 // I2C Port: PORTC
+; 0000 00E6 // I2C SDA bit: 4
+; 0000 00E7 // I2C SCL bit: 5
+; 0000 00E8 // Bit Rate: 100 kHz
+; 0000 00E9 // Note: I2C settings are specified in the
+; 0000 00EA // Project|Configure|C Compiler|Libraries|I2C menu.
+; 0000 00EB i2c_init();
 	RCALL _i2c_init
-; 0000 00CB 
-; 0000 00CC // DS1307 Real Time Clock initialization
-; 0000 00CD // Square wave output on pin SQW/OUT: Off
-; 0000 00CE // SQW/OUT pin state: 0
-; 0000 00CF rtc_init(0,0,0);
+; 0000 00EC 
+; 0000 00ED // DS1307 Real Time Clock initialization
+; 0000 00EE // Square wave output on pin SQW/OUT: Off
+; 0000 00EF // SQW/OUT pin state: 0
+; 0000 00F0 rtc_init(0,0,0);
 	LDI  R30,LOW(0)
 	ST   -Y,R30
 	ST   -Y,R30
 	LDI  R26,LOW(0)
 	RCALL _rtc_init
-; 0000 00D0 
-; 0000 00D1 set = PINB.0;
-	RCALL SUBOPT_0x3
-; 0000 00D2 mode = PINB.1;
-	RCALL SUBOPT_0x4
-; 0000 00D3 ring = PINB.2;
-	RCALL SUBOPT_0x5
-; 0000 00D4 
-; 0000 00D5 // Global enable interrupts
-; 0000 00D6 #asm("sei")
+; 0000 00F1 
+; 0000 00F2 set = PINB.0;
+	RCALL SUBOPT_0x8
+; 0000 00F3 mode = PINB.1;
+	RCALL SUBOPT_0x9
+; 0000 00F4 ring = PINB.2;
+	RCALL SUBOPT_0xA
+; 0000 00F5 
+; 0000 00F6 // Global enable interrupts
+; 0000 00F7 #asm("sei")
 	sei
-; 0000 00D7 
-; 0000 00D8 while (1) {
-_0x19:
-; 0000 00D9       // Place your code here
-; 0000 00DA       if (get_time < 1) {
-	LDI  R30,LOW(1)
-	CP   R13,R30
-	BRSH _0x1C
-; 0000 00DB             if (!set_mode) {
-	TST  R12
-	BRNE _0x1D
-; 0000 00DC                 rtc_get_time(&hour,&min,&sec);
+; 0000 00F8 
+; 0000 00F9 while (1) {
+_0x33:
+; 0000 00FA       // Place your code here
+; 0000 00FB       if (get_time == 0) {
+	LDS  R30,_get_time
+	LDS  R31,_get_time+1
+	SBIW R30,0
+	BRNE _0x36
+; 0000 00FC             if (!set_mode && !ring_disp) {
+	TST  R10
+	BRNE _0x38
+	RCALL SUBOPT_0x2
+	CPI  R30,0
+	BREQ _0x39
+_0x38:
+	RJMP _0x37
+_0x39:
+; 0000 00FD                 rtc_get_time(&hour,&min,&sec);
 	LDI  R30,LOW(5)
 	LDI  R31,HIGH(5)
 	RCALL SUBOPT_0x0
@@ -1713,7 +1875,7 @@ _0x19:
 	LDI  R26,LOW(7)
 	LDI  R27,HIGH(7)
 	RCALL _rtc_get_time
-; 0000 00DD                 rtc_get_date(&week,&day,&mon,&year);
+; 0000 00FE                 rtc_get_date(&week,&day,&mon,&year);
 	LDI  R30,LOW(6)
 	LDI  R31,HIGH(6)
 	RCALL SUBOPT_0x0
@@ -1726,34 +1888,45 @@ _0x19:
 	LDI  R26,LOW(11)
 	LDI  R27,HIGH(11)
 	RCALL _rtc_get_date
-; 0000 00DE                 printf("w%d_%d:%d:%d\r",week,hour,min,sec);
+; 0000 00FF                 printf("w%d_%d:%d:%d\r",week,hour,min,sec);
 	__POINTW1FN _0x0,20
 	RCALL SUBOPT_0x0
-	RCALL SUBOPT_0x6
+	RCALL SUBOPT_0xB
 	LDI  R24,16
 	RCALL _printf
 	ADIW R28,18
-; 0000 00DF             } else printf("set_mode:%d: w%d_%d:%d:%d\r",set_mode,week,hour,min,sec);
-	RJMP _0x1E
-_0x1D:
+; 0000 0100             } else printf("set_mode:%d: w%d_%d:%d:%d\r",set_mode,week,hour,min,sec);
+	RJMP _0x3A
+_0x37:
 	__POINTW1FN _0x0,34
 	RCALL SUBOPT_0x0
 	RCALL SUBOPT_0x1
-	RCALL SUBOPT_0x6
+	RCALL SUBOPT_0xB
 	LDI  R24,20
 	RCALL _printf
 	ADIW R28,22
-; 0000 00E0             get_time = 100; // 50*10ms = 500ms
-_0x1E:
+; 0000 0101             get_time = 100; // 500*1ms = 500ms
+_0x3A:
 	LDI  R30,LOW(100)
-	MOV  R13,R30
-; 0000 00E1       }
-; 0000 00E2       }
-_0x1C:
-	RJMP _0x19
-; 0000 00E3 }
-_0x1F:
-	RJMP _0x1F
+	LDI  R31,HIGH(100)
+	STS  _get_time,R30
+	STS  _get_time+1,R31
+; 0000 0102             //display();
+; 0000 0103       }
+; 0000 0104       if (ring_disp) {
+_0x36:
+	RCALL SUBOPT_0x2
+	CPI  R30,0
+	BREQ _0x3B
+; 0000 0105             sec = 0;
+	CLR  R7
+; 0000 0106       }
+; 0000 0107       }
+_0x3B:
+	RJMP _0x33
+; 0000 0108 }
+_0x3C:
+	RJMP _0x3C
 ; .FEND
 
 	.CSEG
@@ -1777,26 +1950,26 @@ _0x2000003:
 	ORI  R30,0x80
 	STD  Y+2,R30
 _0x2000004:
-	RCALL SUBOPT_0x7
+	RCALL SUBOPT_0xC
 	LDI  R26,LOW(7)
 	RCALL _i2c_write
 	LDD  R26,Y+2
-	RCALL SUBOPT_0x8
+	RCALL SUBOPT_0xD
 	RJMP _0x20A0001
 ; .FEND
 _rtc_get_time:
 ; .FSTART _rtc_get_time
 	ST   -Y,R27
 	ST   -Y,R26
-	RCALL SUBOPT_0x7
+	RCALL SUBOPT_0xC
 	LDI  R26,LOW(0)
-	RCALL SUBOPT_0x8
-	RCALL SUBOPT_0x9
-	RCALL SUBOPT_0xA
+	RCALL SUBOPT_0xD
+	RCALL SUBOPT_0xE
+	RCALL SUBOPT_0xF
 	LD   R26,Y
 	LDD  R27,Y+1
-	RCALL SUBOPT_0xB
-	RCALL SUBOPT_0xC
+	RCALL SUBOPT_0x10
+	RCALL SUBOPT_0x11
 	LDD  R26,Y+4
 	LDD  R27,Y+4+1
 	ST   X,R30
@@ -1807,27 +1980,27 @@ _rtc_get_time:
 _rtc_set_time:
 ; .FSTART _rtc_set_time
 	ST   -Y,R26
-	RCALL SUBOPT_0x7
+	RCALL SUBOPT_0xC
 	LDI  R26,LOW(0)
+	RCALL SUBOPT_0x12
+	RCALL SUBOPT_0x13
+	RCALL SUBOPT_0x14
 	RCALL SUBOPT_0xD
-	RCALL SUBOPT_0xE
-	RCALL SUBOPT_0xF
-	RCALL SUBOPT_0x8
 	RJMP _0x20A0001
 ; .FEND
 _rtc_get_date:
 ; .FSTART _rtc_get_date
-	RCALL SUBOPT_0x10
-	RCALL SUBOPT_0x7
+	RCALL SUBOPT_0x15
+	RCALL SUBOPT_0xC
 	LDI  R26,LOW(3)
-	RCALL SUBOPT_0x8
-	RCALL SUBOPT_0x9
-	RCALL SUBOPT_0x11
-	RCALL SUBOPT_0xB
+	RCALL SUBOPT_0xD
+	RCALL SUBOPT_0xE
+	RCALL SUBOPT_0x16
+	RCALL SUBOPT_0x10
 	LDD  R26,Y+4
 	LDD  R27,Y+4+1
-	RCALL SUBOPT_0xB
-	RCALL SUBOPT_0xC
+	RCALL SUBOPT_0x10
+	RCALL SUBOPT_0x11
 	LD   R26,Y
 	LDD  R27,Y+1
 	ST   X,R30
@@ -1838,14 +2011,14 @@ _rtc_get_date:
 _rtc_set_date:
 ; .FSTART _rtc_set_date
 	ST   -Y,R26
-	RCALL SUBOPT_0x7
+	RCALL SUBOPT_0xC
 	LDI  R26,LOW(3)
 	RCALL _i2c_write
 	LDD  R26,Y+3
-	RCALL SUBOPT_0xF
-	RCALL SUBOPT_0xE
+	RCALL SUBOPT_0x14
+	RCALL SUBOPT_0x13
+	RCALL SUBOPT_0x12
 	RCALL SUBOPT_0xD
-	RCALL SUBOPT_0x8
 	ADIW R28,4
 	RET
 ; .FEND
@@ -1875,7 +2048,7 @@ putchar0:
 ; .FEND
 _put_usart_G101:
 ; .FSTART _put_usart_G101
-	RCALL SUBOPT_0x10
+	RCALL SUBOPT_0x15
 	LDD  R26,Y+2
 	RCALL _putchar
 	LD   R26,Y
@@ -1891,7 +2064,7 @@ _0x20A0001:
 ; .FEND
 __print_G101:
 ; .FSTART __print_G101
-	RCALL SUBOPT_0x10
+	RCALL SUBOPT_0x15
 	SBIW R28,6
 	RCALL __SAVELOCR6
 	LDI  R17,0
@@ -1921,7 +2094,7 @@ _0x2020016:
 	LDI  R17,LOW(1)
 	RJMP _0x202001E
 _0x202001D:
-	RCALL SUBOPT_0x12
+	RCALL SUBOPT_0x17
 _0x202001E:
 	RJMP _0x202001B
 _0x202001C:
@@ -1929,7 +2102,7 @@ _0x202001C:
 	BRNE _0x202001F
 	CPI  R18,37
 	BRNE _0x2020020
-	RCALL SUBOPT_0x12
+	RCALL SUBOPT_0x17
 	RJMP _0x20200CC
 _0x2020020:
 	LDI  R17,LOW(2)
@@ -1986,26 +2159,26 @@ _0x2020029:
 	MOV  R30,R18
 	CPI  R30,LOW(0x63)
 	BRNE _0x202002F
-	RCALL SUBOPT_0x13
-	RCALL SUBOPT_0x14
-	RCALL SUBOPT_0x13
+	RCALL SUBOPT_0x18
+	RCALL SUBOPT_0x19
+	RCALL SUBOPT_0x18
 	LDD  R26,Z+4
 	ST   -Y,R26
-	RCALL SUBOPT_0x15
+	RCALL SUBOPT_0x1A
 	RJMP _0x2020030
 _0x202002F:
 	CPI  R30,LOW(0x73)
 	BRNE _0x2020032
-	RCALL SUBOPT_0x16
-	RCALL SUBOPT_0x17
+	RCALL SUBOPT_0x1B
+	RCALL SUBOPT_0x1C
 	RCALL _strlen
 	MOV  R17,R30
 	RJMP _0x2020033
 _0x2020032:
 	CPI  R30,LOW(0x70)
 	BRNE _0x2020035
-	RCALL SUBOPT_0x16
-	RCALL SUBOPT_0x17
+	RCALL SUBOPT_0x1B
+	RCALL SUBOPT_0x1C
 	RCALL _strlenf
 	MOV  R17,R30
 	ORI  R16,LOW(8)
@@ -2028,7 +2201,7 @@ _0x202003A:
 _0x202003B:
 	LDI  R30,LOW(_tbl10_G101*2)
 	LDI  R31,HIGH(_tbl10_G101*2)
-	RCALL SUBOPT_0x18
+	RCALL SUBOPT_0x1D
 	LDI  R17,LOW(5)
 	RJMP _0x202003D
 _0x202003C:
@@ -2043,13 +2216,13 @@ _0x202003F:
 _0x2020040:
 	LDI  R30,LOW(_tbl16_G101*2)
 	LDI  R31,HIGH(_tbl16_G101*2)
-	RCALL SUBOPT_0x18
+	RCALL SUBOPT_0x1D
 	LDI  R17,LOW(4)
 _0x202003D:
 	SBRS R16,2
 	RJMP _0x2020042
-	RCALL SUBOPT_0x16
-	RCALL SUBOPT_0x19
+	RCALL SUBOPT_0x1B
+	RCALL SUBOPT_0x1E
 	LDD  R26,Y+11
 	TST  R26
 	BRPL _0x2020043
@@ -2069,8 +2242,8 @@ _0x2020044:
 _0x2020045:
 	RJMP _0x2020046
 _0x2020042:
-	RCALL SUBOPT_0x16
-	RCALL SUBOPT_0x19
+	RCALL SUBOPT_0x1B
+	RCALL SUBOPT_0x1E
 _0x2020046:
 _0x2020036:
 	SBRC R16,0
@@ -2093,7 +2266,7 @@ _0x202004D:
 _0x202004B:
 	LDI  R18,LOW(32)
 _0x202004E:
-	RCALL SUBOPT_0x12
+	RCALL SUBOPT_0x17
 	SUBI R21,LOW(1)
 	RJMP _0x2020048
 _0x202004A:
@@ -2109,15 +2282,15 @@ _0x2020050:
 	LDD  R30,Y+6
 	LDD  R31,Y+6+1
 	LPM  R18,Z+
-	RCALL SUBOPT_0x18
+	RCALL SUBOPT_0x1D
 	RJMP _0x2020054
 _0x2020053:
-	RCALL SUBOPT_0x11
+	RCALL SUBOPT_0x16
 	LD   R18,X+
 	STD  Y+6,R26
 	STD  Y+6+1,R27
 _0x2020054:
-	RCALL SUBOPT_0x12
+	RCALL SUBOPT_0x17
 	CPI  R21,0
 	BREQ _0x2020055
 	SUBI R21,LOW(1)
@@ -2137,7 +2310,7 @@ _0x2020058:
 	LDD  R30,Y+6
 	LDD  R31,Y+6+1
 	ADIW R30,2
-	RCALL SUBOPT_0x18
+	RCALL SUBOPT_0x1D
 _0x202005A:
 	LDD  R30,Y+8
 	LDD  R31,Y+8+1
@@ -2195,7 +2368,7 @@ _0x20200CD:
 	RJMP _0x202006A
 	ANDI R16,LOW(251)
 	ST   -Y,R20
-	RCALL SUBOPT_0x15
+	RCALL SUBOPT_0x1A
 	CPI  R21,0
 	BREQ _0x202006B
 	SUBI R21,LOW(1)
@@ -2203,7 +2376,7 @@ _0x202006B:
 _0x202006A:
 _0x2020069:
 _0x2020061:
-	RCALL SUBOPT_0x12
+	RCALL SUBOPT_0x17
 	CPI  R21,0
 	BREQ _0x202006C
 	SUBI R21,LOW(1)
@@ -2225,7 +2398,7 @@ _0x202006E:
 	SUBI R21,LOW(1)
 	LDI  R30,LOW(32)
 	ST   -Y,R30
-	RCALL SUBOPT_0x15
+	RCALL SUBOPT_0x1A
 	RJMP _0x202006E
 _0x2020070:
 _0x202006D:
@@ -2315,7 +2488,7 @@ bin2bcd1:
 	.CSEG
 _strlen:
 ; .FSTART _strlen
-	RCALL SUBOPT_0x10
+	RCALL SUBOPT_0x15
     ld   r26,y+
     ld   r27,y+
     clr  r30
@@ -2331,7 +2504,7 @@ strlen1:
 ; .FEND
 _strlenf:
 ; .FSTART _strlenf
-	RCALL SUBOPT_0x10
+	RCALL SUBOPT_0x15
     clr  r26
     clr  r27
     ld   r30,y+
@@ -2348,11 +2521,19 @@ strlenf1:
 ; .FEND
 
 	.DSEG
+_get_time:
+	.BYTE 0x2
 _set:
 	.BYTE 0x1
 _mode:
 	.BYTE 0x1
 _ring:
+	.BYTE 0x1
+_ring_disp:
+	.BYTE 0x1
+_symbol_S0000003000:
+	.BYTE 0x1
+_disp_S0000004000:
 	.BYTE 0x1
 
 	.CSEG
@@ -2364,15 +2545,49 @@ SUBOPT_0x0:
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:2 WORDS
 SUBOPT_0x1:
-	MOV  R30,R12
+	MOV  R30,R10
 	CLR  R31
 	CLR  R22
 	CLR  R23
 	RCALL __PUTPARD1
 	RET
 
-;OPTIMIZER ADDED SUBROUTINE, CALLED 3 TIMES, CODE SIZE REDUCTION:8 WORDS
+;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:1 WORDS
 SUBOPT_0x2:
+	LDS  R30,_ring_disp
+	RET
+
+;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:1 WORDS
+SUBOPT_0x3:
+	LDS  R30,_symbol_S0000003000
+	RET
+
+;OPTIMIZER ADDED SUBROUTINE, CALLED 8 TIMES, CODE SIZE REDUCTION:5 WORDS
+SUBOPT_0x4:
+	LDS  R26,_symbol_S0000003000
+	RET
+
+;OPTIMIZER ADDED SUBROUTINE, CALLED 3 TIMES, CODE SIZE REDUCTION:4 WORDS
+SUBOPT_0x5:
+	LDI  R27,0
+	LDI  R30,LOW(10)
+	LDI  R31,HIGH(10)
+	RCALL __DIVW21
+	RET
+
+;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:4 WORDS
+SUBOPT_0x6:
+	IN   R1,18
+	RCALL SUBOPT_0x3
+	SUBI R30,-LOW(2)
+	LDI  R26,LOW(1)
+	RCALL __LSLB12
+	OR   R30,R1
+	OUT  0x12,R30
+	RET
+
+;OPTIMIZER ADDED SUBROUTINE, CALLED 3 TIMES, CODE SIZE REDUCTION:8 WORDS
+SUBOPT_0x7:
 	LDI  R27,0
 	SBRC R26,7
 	SER  R27
@@ -2382,7 +2597,7 @@ SUBOPT_0x2:
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:2 WORDS
-SUBOPT_0x3:
+SUBOPT_0x8:
 	LDI  R30,0
 	SBIC 0x16,0
 	LDI  R30,1
@@ -2390,7 +2605,7 @@ SUBOPT_0x3:
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:2 WORDS
-SUBOPT_0x4:
+SUBOPT_0x9:
 	LDI  R30,0
 	SBIC 0x16,1
 	LDI  R30,1
@@ -2398,7 +2613,7 @@ SUBOPT_0x4:
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:2 WORDS
-SUBOPT_0x5:
+SUBOPT_0xA:
 	LDI  R30,0
 	SBIC 0x16,2
 	LDI  R30,1
@@ -2406,7 +2621,7 @@ SUBOPT_0x5:
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:17 WORDS
-SUBOPT_0x6:
+SUBOPT_0xB:
 	MOV  R30,R6
 	CLR  R31
 	CLR  R22
@@ -2430,18 +2645,18 @@ SUBOPT_0x6:
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 5 TIMES, CODE SIZE REDUCTION:6 WORDS
-SUBOPT_0x7:
+SUBOPT_0xC:
 	RCALL _i2c_start
 	LDI  R26,LOW(208)
 	RJMP _i2c_write
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 5 TIMES, CODE SIZE REDUCTION:2 WORDS
-SUBOPT_0x8:
+SUBOPT_0xD:
 	RCALL _i2c_write
 	RJMP _i2c_stop
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:2 WORDS
-SUBOPT_0x9:
+SUBOPT_0xE:
 	RCALL _i2c_start
 	LDI  R26,LOW(209)
 	RCALL _i2c_write
@@ -2449,28 +2664,28 @@ SUBOPT_0x9:
 	RJMP _i2c_read
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 6 TIMES, CODE SIZE REDUCTION:3 WORDS
-SUBOPT_0xA:
+SUBOPT_0xF:
 	MOV  R26,R30
 	RJMP _bcd2bin
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 3 TIMES, CODE SIZE REDUCTION:4 WORDS
-SUBOPT_0xB:
+SUBOPT_0x10:
 	ST   X,R30
 	LDI  R26,LOW(1)
 	RCALL _i2c_read
-	RJMP SUBOPT_0xA
+	RJMP SUBOPT_0xF
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:3 WORDS
-SUBOPT_0xC:
+SUBOPT_0x11:
 	LDD  R26,Y+2
 	LDD  R27,Y+2+1
 	ST   X,R30
 	LDI  R26,LOW(0)
 	RCALL _i2c_read
-	RJMP SUBOPT_0xA
+	RJMP SUBOPT_0xF
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:1 WORDS
-SUBOPT_0xD:
+SUBOPT_0x12:
 	RCALL _i2c_write
 	LD   R26,Y
 	RCALL _bin2bcd
@@ -2478,7 +2693,7 @@ SUBOPT_0xD:
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:1 WORDS
-SUBOPT_0xE:
+SUBOPT_0x13:
 	RCALL _i2c_write
 	LDD  R26,Y+1
 	RCALL _bin2bcd
@@ -2486,7 +2701,7 @@ SUBOPT_0xE:
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:1 WORDS
-SUBOPT_0xF:
+SUBOPT_0x14:
 	RCALL _i2c_write
 	LDD  R26,Y+2
 	RCALL _bin2bcd
@@ -2494,19 +2709,19 @@ SUBOPT_0xF:
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 5 TIMES, CODE SIZE REDUCTION:2 WORDS
-SUBOPT_0x10:
+SUBOPT_0x15:
 	ST   -Y,R27
 	ST   -Y,R26
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:1 WORDS
-SUBOPT_0x11:
+SUBOPT_0x16:
 	LDD  R26,Y+6
 	LDD  R27,Y+6+1
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 5 TIMES, CODE SIZE REDUCTION:18 WORDS
-SUBOPT_0x12:
+SUBOPT_0x17:
 	ST   -Y,R18
 	LDD  R26,Y+13
 	LDD  R27,Y+13+1
@@ -2516,20 +2731,20 @@ SUBOPT_0x12:
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 6 TIMES, CODE SIZE REDUCTION:3 WORDS
-SUBOPT_0x13:
+SUBOPT_0x18:
 	LDD  R30,Y+16
 	LDD  R31,Y+16+1
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 5 TIMES, CODE SIZE REDUCTION:6 WORDS
-SUBOPT_0x14:
+SUBOPT_0x19:
 	SBIW R30,4
 	STD  Y+16,R30
 	STD  Y+16+1,R31
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 3 TIMES, CODE SIZE REDUCTION:6 WORDS
-SUBOPT_0x15:
+SUBOPT_0x1A:
 	LDD  R26,Y+13
 	LDD  R27,Y+13+1
 	LDD  R30,Y+15
@@ -2538,28 +2753,28 @@ SUBOPT_0x15:
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:1 WORDS
-SUBOPT_0x16:
-	RCALL SUBOPT_0x13
-	RJMP SUBOPT_0x14
+SUBOPT_0x1B:
+	RCALL SUBOPT_0x18
+	RJMP SUBOPT_0x19
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:4 WORDS
-SUBOPT_0x17:
+SUBOPT_0x1C:
 	LDD  R26,Y+16
 	LDD  R27,Y+16+1
 	ADIW R26,4
 	RCALL __GETW1P
 	STD  Y+6,R30
 	STD  Y+6+1,R31
-	RJMP SUBOPT_0x11
+	RJMP SUBOPT_0x16
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:1 WORDS
-SUBOPT_0x18:
+SUBOPT_0x1D:
 	STD  Y+6,R30
 	STD  Y+6+1,R31
 	RET
 
 ;OPTIMIZER ADDED SUBROUTINE, CALLED 2 TIMES, CODE SIZE REDUCTION:3 WORDS
-SUBOPT_0x19:
+SUBOPT_0x1E:
 	LDD  R26,Y+16
 	LDD  R27,Y+16+1
 	ADIW R26,4
@@ -2687,6 +2902,94 @@ __ANEGW1:
 	SBCI R31,0
 	RET
 
+__LSLB12:
+	TST  R30
+	MOV  R0,R30
+	MOV  R30,R26
+	BREQ __LSLB12R
+__LSLB12L:
+	LSL  R30
+	DEC  R0
+	BRNE __LSLB12L
+__LSLB12R:
+	RET
+
+__LNEGB1:
+	TST  R30
+	LDI  R30,1
+	BREQ __LNEGB1F
+	CLR  R30
+__LNEGB1F:
+	RET
+
+__DIVW21U:
+	CLR  R0
+	CLR  R1
+	LDI  R25,16
+__DIVW21U1:
+	LSL  R26
+	ROL  R27
+	ROL  R0
+	ROL  R1
+	SUB  R0,R30
+	SBC  R1,R31
+	BRCC __DIVW21U2
+	ADD  R0,R30
+	ADC  R1,R31
+	RJMP __DIVW21U3
+__DIVW21U2:
+	SBR  R26,1
+__DIVW21U3:
+	DEC  R25
+	BRNE __DIVW21U1
+	MOVW R30,R26
+	MOVW R26,R0
+	RET
+
+__DIVW21:
+	RCALL __CHKSIGNW
+	RCALL __DIVW21U
+	BRTC __DIVW211
+	RCALL __ANEGW1
+__DIVW211:
+	RET
+
+__MODW21:
+	CLT
+	SBRS R27,7
+	RJMP __MODW211
+	COM  R26
+	COM  R27
+	ADIW R26,1
+	SET
+__MODW211:
+	SBRC R31,7
+	RCALL __ANEGW1
+	RCALL __DIVW21U
+	MOVW R30,R26
+	BRTC __MODW212
+	RCALL __ANEGW1
+__MODW212:
+	RET
+
+__CHKSIGNW:
+	CLT
+	SBRS R31,7
+	RJMP __CHKSW1
+	RCALL __ANEGW1
+	SET
+__CHKSW1:
+	SBRS R27,7
+	RJMP __CHKSW2
+	COM  R26
+	COM  R27
+	ADIW R26,1
+	BLD  R0,0
+	INC  R0
+	BST  R0,0
+__CHKSW2:
+	RET
+
 __GETW1P:
 	LD   R30,X+
 	LD   R31,X
@@ -2704,6 +3007,12 @@ __PUTPARD1:
 	ST   -Y,R22
 	ST   -Y,R31
 	ST   -Y,R30
+	RET
+
+__CPW02:
+	CLR  R0
+	CP   R0,R26
+	CPC  R0,R27
 	RET
 
 __SAVELOCR6:
